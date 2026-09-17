@@ -1,11 +1,11 @@
-const CACHE_NAME = 'estanco-em-v1';
+const CACHE_NAME = 'estanco-em-v2';
 const urlsToCache = [
   './',
   './index.html',
   './style.css',
   './app.js',
   './manifest.json',
-  './ico.jpg'
+  './ico.png'
 ];
 
 // Instalación: Guarda los archivos estáticos en caché
@@ -13,7 +13,7 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('Archivos cacheados exitosamente (v1)');
+        console.log('Archivos cacheados exitosamente (v2)');
         return cache.addAll(urlsToCache);
       })
   );
