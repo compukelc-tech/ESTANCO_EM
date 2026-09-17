@@ -1,0 +1,21 @@
+{
+  "name": "estanco E M",
+  "short_name": "estanco E M",
+  "description": "Sistema de gestión y facturación para estanco E M",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f0f11",
+  "theme_color": "#d4af37",
+  "icons": [
+    {
+      "src": "ico.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "ico.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}
