@@ -4,15 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>estanco E M</title>
-  
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0f0f11">
   <link rel="icon" type="image/png" href="ico.png">
   <link rel="apple-touch-icon" href="ico.png">
-
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
-
   <style>
     .logo-imponente { height: 42px; width: auto; filter: drop-shadow(0px 4px 8px rgba(0, 0, 0, 0.4)); transition: transform 0.3s ease, filter 0.3s ease; }
     .logo-imponente:hover { transform: scale(1.05); filter: drop-shadow(0px 6px 12px rgba(15, 15, 17, 0.6)); }
@@ -22,15 +19,12 @@
 <body>
 
 <div id="bannerPublicitarioContainer"></div>
-
 <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
 <div class="main-content no-print" id="mainContent">
   <div class="topbar">
     <div class="brand-wrapper">
-      <div class="brand-logo">
-        <img src="ico.png" alt="logo estanco E M" class="logo-imponente">
-      </div>
+      <div class="brand-logo"><img src="ico.png" alt="logo estanco E M" class="logo-imponente"></div>
       <div>
         <div class="brand-title">estanco E M</div>
         <div class="brand-subtitle" id="appSub">Módulo de autenticación</div>
@@ -49,6 +43,7 @@
     <button class="btn btn-blue" id="btnTabPOS" onclick="cambiarSeccionTrabajo('POS')">🛒 Punto de Venta</button>
     <button class="btn btn-purple" id="btnTabRep" onclick="cambiarSeccionTrabajo('REPORTES')" style="display:none;">📊 Reportes</button>
     <button class="btn btn-danger" id="btnTabCartera" onclick="cambiarSeccionTrabajo('CARTERA')" style="display:none;">💼 Cartera</button>
+    <button class="btn btn-warning" id="btnTabArchivo" onclick="cambiarSeccionTrabajo('ARCHIVO')" style="display:none; color: #000;">📂 Archivo Facturas</button>
   </div>
 
   <div class="scrollable-body">
@@ -199,6 +194,57 @@
            <tbody id="tbodyCarteraClientes"><tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:24px;">Consultando datos...</td></tr></tbody>
          </table>
        </div>
+    </div>
+
+    <!-- NUEVO MÓDULO: ARCHIVO DIGITAL -->
+    <div id="areaArchivo" style="display:none; flex-direction:column; gap:16px; max-width:960px; margin:0 auto; width:100%;">
+      <div class="section-title">📂 Archivo de Facturas Físicas</div>
+      
+      <div class="form-card" style="margin-bottom: 20px;">
+        <div style="font-size:13px; font-weight:600; color:var(--clr-primary); margin-bottom:12px; text-transform:uppercase;">Subir Nueva Factura</div>
+        <div class="form-grid">
+          <div class="form-group span-2">
+            <label>Fotografía del Documento</label>
+            <input type="file" id="archFile" accept="image/*" class="form-control-input">
+            <span style="font-size:10px; color:var(--text-muted); margin-top:2px;">Se comprimirá automáticamente para no saturar tu Drive.</span>
+          </div>
+          <div class="form-group">
+            <label>Nombre del Archivo (Ej. Fra-0012)</label>
+            <input type="text" id="archNombre" placeholder="Referencia de la factura">
+          </div>
+          <div class="form-group">
+            <label>Proveedor</label>
+            <input type="text" id="archProveedor" placeholder="Nombre de la empresa">
+          </div>
+          <div class="form-group span-2">
+            <label>Nota Adicional (Opcional)</label>
+            <input type="text" id="archNota" placeholder="Ej. Pagado en efectivo, pendiente entrega...">
+          </div>
+        </div>
+        <button class="btn btn-warning btn-w100" id="btnGuardarArchivo" onclick="procesarSubidaArchivo()" style="margin-top:15px; color:#000;">📤 Subir Factura Física</button>
+      </div>
+
+      <div class="form-card">
+        <div style="font-size:13px; font-weight:600; color:var(--clr-info); margin-bottom:12px; text-transform:uppercase;">Historial de Documentos</div>
+        <input type="text" id="txtBuscarArchivo" placeholder="🔍 Buscar por proveedor, nombre de archivo, o nota..." oninput="filtrarArchivos()" class="form-control-input" style="margin-bottom:15px;">
+        <div class="table-responsive">
+          <table class="pos-table">
+            <thead>
+              <tr>
+                <th>Fecha y Hora</th>
+                <th>Subido Por</th>
+                <th>Proveedor</th>
+                <th>Nombre Doc.</th>
+                <th>Nota</th>
+                <th>Enlace</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyArchivo">
+              <tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:20px;">Cargando historial...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
   </div>
@@ -366,9 +412,7 @@
 </div>
 
 <div id="area-impresion" class="print-area" style="display:none;"></div>
-
 <script src="app.js"></script>
-
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
@@ -378,6 +422,5 @@
     });
   }
 </script>
-
 </body>
 </html>
