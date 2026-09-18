@@ -6,7 +6,7 @@ const $ = (id) => document.getElementById(id);
 const API_URL = 'https://script.google.com/macros/s/AKfycbwtcirNXi_2Gib9TGHwqATrSe-qjIItysW0LYUucnLkCOoUwYy-wkg-kjiH7gyldl1E/exec';
 
 let usuarioActual = null, rolActual = null, correoTemporal = null, usernameActual = null;
-let memoriaProductosPOS = [], carritoPOS = [], memoriaVentas = [], tempBusquedaReab = [], memoriaCartera = [];
+let memoriaProductosPOS = [], carritoPOS = [], memoriaVentas = [], tempBusquedaReab = [], memoriaCartera = [], memoriaArchivos = [];
 
 let temporizadorInactividad;
 const TIEMPO_LIMITE_MINUTOS = 15;
@@ -74,7 +74,6 @@ async function cargarBannerGlobal() {
     
     if (res && res.estado) {
       const estadoLimpio = String(res.estado).trim();
-      
       if (estadoLimpio !== 'Activo' && estadoLimpio !== 'No Encontrado') {
         document.body.innerHTML = 
           '<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; background:#0f0f11; color:#f4f4f5; text-align:center; padding:20px;">' +
@@ -104,10 +103,7 @@ async function cargarBannerGlobal() {
       $('bannerPublicitarioContainer').innerHTML = htmlBanner;
     }
     return true; 
-  } catch (e) {
-    console.log("No se pudo cargar el estado global/banner.");
-    return true; 
-  }
+  } catch (e) { return true; }
 }
 
 function initLectorBarras() {
@@ -133,7 +129,6 @@ function mostrarRegistro(){ ocultarTodosLosFormularios(); $('registerForm').styl
 function mostrarOlvido()  { ocultarTodosLosFormularios(); $('forgotPasswordForm').style.display = 'flex'; }
 
 function togglePass(id) { var x = $(id); x.type = (x.type === 'password') ? 'text' : 'password'; }
-
 function showPmsg(t, c) { var e = $('pmsg'); e.textContent = t; e.className = 'feedback-msg ' + c; e.style.display = 'block'; }
 
 async function iniciarSesion() {
@@ -165,20 +160,14 @@ async function iniciarSesion() {
 function checkPasswordComplexity() {
   var p = $('nuevaClave').value;
   var len = p.length >= 8, upp = /[A-Z]/.test(p), num = /\d/.test(p), spc = /[!@#$%^&*()_+{}\[\]:;"'<>,.?~\\/-]/.test(p);
-  
   function setChk(id, ok, txt) { var el = $(id); el.className = 'check-item ' + (ok ? 'valid' : 'invalid'); el.innerHTML = (ok ? '✅' : '❌') + ' ' + txt; }
-  
-  setChk('chk-len', len, 'Mínimo 8 caracteres'); 
-  setChk('chk-upp', upp, 'Una letra mayúscula');
-  setChk('chk-num', num, 'Al menos un número'); 
-  setChk('chk-spc', spc, 'Un carácter especial');
-  
+  setChk('chk-len', len, 'Mínimo 8 caracteres'); setChk('chk-upp', upp, 'Una letra mayúscula');
+  setChk('chk-num', num, 'Al menos un número'); setChk('chk-spc', spc, 'Un carácter especial');
   return len && upp && num && spc;
 }
 
 async function confirmarCambioClave() {
   var a = $('claveAntigua').value.trim(), n = $('nuevaClave').value.trim(), c = $('confirmarClave').value.trim();
-  
   if (!checkPasswordComplexity()) return showPmsg('La contraseña no cumple los requisitos.', 'error');
   if (n !== c) return showPmsg('Las contraseñas no coinciden.', 'error');
   
@@ -186,18 +175,14 @@ async function confirmarCambioClave() {
     const r = await apiFetch('cambiarClave', { usuario: correoTemporal, claveAntigua: a, nuevaClave: n });
     showPmsg(r.message || 'Contraseña actualizada. Inicia sesión nuevamente.', 'success');
     setTimeout(mostrarLogin, 2500); 
-  } catch (error) {
-    showPmsg(error.message || 'Error al actualizar la contraseña.', 'error');
-  }
+  } catch (error) { showPmsg(error.message || 'Error al actualizar.', 'error'); }
 }
 
 function sugerirUsuarios() {
   var n = $('regNombre').value.trim(), d = $('regDocumento').value.trim(), cont = $('userSuggestions');
   if (!n || !d || d.length < 4) { cont.innerHTML = ''; return; }
-  
   var partes = n.split(' '), pNombre = partes[0].toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''), iniciales = partes.map(function (p) { return p.charAt(0).toLowerCase(); }).join('').normalize('NFD').replace(/[\u0300-\u036f]/g, ''), uDigitos = d.slice(-4);
   var alts = [ pNombre + uDigitos, iniciales + uDigitos, pNombre + (iniciales.charAt(1) || '') + uDigitos, pNombre + '_' + uDigitos ];
-  
   cont.innerHTML = alts.map(function (a) { return '<button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById(\'regUsuario\').value=\'' + a + '\'; validarUsuarioRealtime();">' + a + '</button>'; }).join('');
 }
 
@@ -207,21 +192,17 @@ function validarUsuarioRealtime() {
   var u = $('regUsuario').value.trim(), ind = $('userValidIndicator');
   if (!u) { ind.innerHTML = ''; return; }
   ind.innerHTML = '⏳';
-  
   valTimer = setTimeout(async function () { 
     try {
       const r = await apiFetch('checkUsername', { usuario: u }, 'GET');
       ind.innerHTML = r.disponible ? '✅' : '❌';
-    } catch (error) {
-      ind.innerHTML = '⚠️';
-    }
+    } catch (error) { ind.innerHTML = '⚠️'; }
   }, 500);
 }
 
 async function registrarUsuario() {
   var c = $('regCorreo').value.trim(), n = $('regNombre').value.trim(), r = $('regRol').value, d = $('regDocumento').value.trim(), u = $('regUsuario').value.trim();
   if (!c || !n || !d || !u) return showPmsg('Faltan datos obligatorios.', 'error');
-  
   try {
     const payload = { datosUsuario: { nombre: n, correo: c, rol: r, documento: d, usuario: u }, esInterno: false, rolSolicitante: '' };
     const res = await apiFetch('registrarUsuario', payload);
@@ -232,7 +213,6 @@ async function registrarUsuario() {
 async function procesarRecordatorio() {
   var c = $('forgotCorreo').value.trim();
   if (!c) return showPmsg('Falta el correo electrónico.', 'error');
-  
   try {
     const r = await apiFetch('procesarOlvido', { correo: c, documento: '123456789' }); 
     showPmsg(r.message || '✔ Instrucciones enviadas al correo.', 'success');
@@ -247,7 +227,7 @@ function activarSesion(nombre, rol) {
   
   $('lockScreen').style.display = 'none';
   $('siName').textContent = nombre; $('siRole').textContent = rol;
-  $('sessionInfo').style.display = 'flex';
+  $('sessionInfo').style.display = 'block'; // Muestra el cuadro de sesión aquí
   
   var esAdmin = ['Súper Administrador', 'Administrador'].indexOf(rol) !== -1;
   var hab = ['Súper Administrador', 'Administrador', 'Vendedor'].indexOf(rol) !== -1;
@@ -266,20 +246,21 @@ function activarSesion(nombre, rol) {
   $('btnTabReabastecer').style.display = esAdmin ? 'inline-flex' : 'none';
   $('btnTabCartera').style.display = esAdmin ? 'inline-flex' : 'none';
   $('btnNuevoDeudorCartera').style.display = esAdmin ? 'inline-flex' : 'none';
+  $('btnTabArchivo').style.display = esAdmin ? 'inline-flex' : 'none';
   
   var soloLectura = ['Usuario', 'Cliente'].indexOf(rol) !== -1;
   document.querySelectorAll('#areaProducto input:not(#calcCostoBase):not(#calcMargen)').forEach(function (i) { i.disabled = soloLectura; });
   $('btnGuardar').style.display = soloLectura ? 'none' : 'block';
   
   sincronizarClientesPOS();
-  if (esAdmin) { cargarVentasParaReportes(); cargarWidgetsDashboard(); }
+  if (esAdmin) { cargarVentasParaReportes(); cargarWidgetsDashboard(); cargarHistorialArchivos(); }
   configurarDashboard(rol); cambiarSeccionTrabajo('DASHBOARD');
 }
 
 function cerrarSesion() {
   usuarioActual = null; rolActual = null; usernameActual = null; clearTimeout(temporizadorInactividad);
   sessionStorage.removeItem('sesionInventario');
-  ['sessionInfo', 'tabsWrap', 'workNav', 'areaDashboard', 'areaProducto', 'areaPOS', 'areaReportes', 'areaCartera'].forEach(id => { var el = $(id); if (el) el.style.display = 'none'; });
+  ['sessionInfo', 'tabsWrap', 'workNav', 'areaDashboard', 'areaProducto', 'areaPOS', 'areaReportes', 'areaCartera', 'areaArchivo'].forEach(id => { var el = $(id); if (el) el.style.display = 'none'; });
   $('roleBadge').style.display = 'none'; $('lockScreen').style.display = 'flex'; $('appSub').textContent = 'Módulo de autenticación'; 
   mostrarLogin(); cerrarSidebar();
 }
@@ -293,7 +274,6 @@ async function procesarCambioClaveVoluntario() {
   if (newP !== conf) return alert('La nueva contraseña y la confirmación no coinciden.');
   if (newP.length < 8) return alert('La nueva contraseña debe tener mínimo 8 caracteres.');
   var btn = $('btnActualizarMiClave'); btn.textContent = 'Actualizando...'; btn.disabled = true;
-
   try {
     const r = await apiFetch('cambiarClave', { usuario: usernameActual, claveAntigua: old, nuevaClave: newP });
     alert(r.message || 'Contraseña actualizada exitosamente.'); cerrarModalCambioVoluntario();
@@ -310,10 +290,9 @@ function configurarDashboard(rol) {
   if (esAdmin) {
     cont.innerHTML += mkCard('📦', 'var(--clr-info-light)', 'var(--clr-info)', 'Ingresar Artículo', 'Añadir productos nuevos.', "cambiarSeccionTrabajo('ALTA')");
     cont.innerHTML += mkCard('🔄', 'rgba(15, 118, 110, 0.15)', '#0f766e', 'Reabastecer Stock', 'Aumentar stock.', 'abrirModalReabastecer()');
+    cont.innerHTML += mkCard('📂', 'var(--clr-warning-light)', 'var(--clr-warning)', 'Archivo Facturas', 'Subir documentos y soportes.', "cambiarSeccionTrabajo('ARCHIVO')");
     cont.innerHTML += mkCard('📊', 'rgba(126, 34, 206, 0.15)', '#7e22ce', 'Reporte General', 'Analizar ingresos.', "cambiarSeccionTrabajo('REPORTES')");
     cont.innerHTML += mkCard('💼', 'var(--clr-danger-light)', 'var(--clr-danger)', 'Control Cartera', 'Gestionar deudas.', "cambiarSeccionTrabajo('CARTERA')");
-    cont.innerHTML += mkCard('🗂️', '#e0e7ff', '#4f46e5', 'Consolidado Stock', 'Imprimir o PDF del inventario actual.', 'generarReporteConsolidado()');
-    cont.innerHTML += mkCard('📈', '#ffedd5', '#ea580c', 'Informe Ventas Mes', 'Imprimir ventas destacadas.', 'generarReporteVentasMes()');
   }
 }
 
@@ -327,7 +306,7 @@ async function cargarWidgetsDashboard() {
 }
 
 function cambiarSeccionTrabajo(modo) {
-  ['lockScreen', 'areaDashboard', 'areaProducto', 'areaPOS', 'areaReportes', 'areaCartera'].forEach(id => { var el = $(id); if (el) el.style.display = 'none'; });
+  ['lockScreen', 'areaDashboard', 'areaProducto', 'areaPOS', 'areaReportes', 'areaCartera', 'areaArchivo'].forEach(id => { var el = $(id); if (el) el.style.display = 'none'; });
   var nav = $('workNav');
   if (modo === 'DASHBOARD') { $('areaDashboard').style.display = 'flex'; if (nav) nav.style.display = 'none'; } 
   else {
@@ -336,10 +315,14 @@ function cambiarSeccionTrabajo(modo) {
     if (modo === 'POS') $('areaPOS').style.display = 'flex';
     if (modo === 'REPORTES') $('areaReportes').style.display = 'flex';
     if (modo === 'CARTERA') { $('areaCartera').style.display = 'flex'; cargarCarteraModulo(); }
+    if (modo === 'ARCHIVO') $('areaArchivo').style.display = 'flex';
   }
-  ['btnTabDash', 'btnTabAlta', 'btnTabPOS', 'btnTabRep', 'btnTabCartera'].forEach(btn => { var b = $(btn); if (b) b.classList.remove('btn-success'); });
-  var mapa = { DASHBOARD: 'btnTabDash', ALTA: 'btnTabAlta', POS: 'btnTabPOS', REPORTES: 'btnTabRep', CARTERA: 'btnTabCartera' };
-  if (mapa[modo]) { var bActive = $(mapa[modo]); if (bActive) bActive.classList.add('btn-success'); }
+  ['btnTabDash', 'btnTabAlta', 'btnTabPOS', 'btnTabRep', 'btnTabCartera', 'btnTabArchivo'].forEach(btn => { var b = $(btn); if (b) { b.classList.remove('btn-success'); b.style.color = ''; } });
+  var mapa = { DASHBOARD: 'btnTabDash', ALTA: 'btnTabAlta', POS: 'btnTabPOS', REPORTES: 'btnTabRep', CARTERA: 'btnTabCartera', ARCHIVO: 'btnTabArchivo' };
+  if (mapa[modo]) { 
+    var bActive = $(mapa[modo]); 
+    if (bActive) { bActive.classList.add('btn-success'); if(modo==='ARCHIVO') bActive.style.color = '#fff'; }
+  }
 }
 
 var htmlImpresionPendiente = '';
@@ -356,12 +339,9 @@ function calcularPrecioSugerido() { var base = parseFloat($('calcCostoBase').val
 function limpiarCalculadora() { $('calcCostoBase').value = ''; $('calcMargen').value = ''; $('calcPrecioSugerido').textContent = '$0.00'; restaurarFormularioAlta(); }
 function gv(id) { var e = $(id); return e ? e.value : ''; }
 
-// VARIABLES PARA LA EDICIÓN
 let skuEdicionOriginal = null;
-
 async function procesarProducto() {
   if (skuEdicionOriginal) { return guardarEdicionProducto(); }
-  
   var d = { codigoSku: gv('codigoSku'), nombreProducto: gv('nombreProducto'), categoria: gv('categoria'), descripcion: gv('descripcion'), costoCompra: gv('costoCompra'), precioVenta: gv('precioVenta'), stockActual: gv('cantidadComprada'), valorTotal: gv('valorTotal'), proveedor: gv('proveedor'), numeroFactura: gv('numeroFactura'), codigoProducto: gv('codigoProducto'), cantidadComprada: gv('cantidadComprada'), costoCompraTotal: gv('costoCompraTotal'), fechaCaducidad: gv('fechaCaducidad') };
   if (!d.codigoSku || !d.nombreProducto) return alert('SKU y Nombre obligatorios.');
   var btn = $('btnGuardar'); btn.textContent = '⏳ Guardando...'; btn.disabled = true;
@@ -373,30 +353,14 @@ async function procesarProducto() {
 }
 
 async function guardarEdicionProducto() {
-  var d = { 
-    codigoSkuOriginal: skuEdicionOriginal, 
-    nombreProducto: gv('nombreProducto'), 
-    categoria: gv('categoria'), 
-    descripcion: gv('descripcion'), 
-    costoCompra: gv('costoCompra'), 
-    precioVenta: gv('precioVenta'), 
-    stockActual: gv('cantidadComprada'), 
-    proveedor: gv('proveedor'),
-    codigoProducto: gv('codigoProducto')
-  };
+  var d = { codigoSkuOriginal: skuEdicionOriginal, nombreProducto: gv('nombreProducto'), categoria: gv('categoria'), descripcion: gv('descripcion'), costoCompra: gv('costoCompra'), precioVenta: gv('precioVenta'), stockActual: gv('cantidadComprada'), proveedor: gv('proveedor'), codigoProducto: gv('codigoProducto') };
   if (!d.nombreProducto) return alert('Nombre obligatorio.');
-  
   var btn = $('btnGuardar'); btn.textContent = '⏳ Actualizando...'; btn.disabled = true;
-  
   try {
     const r = await apiFetch('editarProducto', { producto: d, operador: usuarioActual });
     alert('✅ Producto actualizado correctamente.');
     restaurarFormularioAlta();
-  } catch (error) { 
-    alert('❌ Error: ' + error.message); 
-    btn.textContent = '🔄 Actualizar Producto'; 
-    btn.disabled = false; 
-  }
+  } catch (error) { alert('❌ Error: ' + error.message); btn.textContent = '🔄 Actualizar Producto'; btn.disabled = false; }
 }
 
 function restaurarFormularioAlta() {
@@ -405,34 +369,15 @@ function restaurarFormularioAlta() {
   if (campoSku) campoSku.disabled = false;
   ['codigoSku','nombreProducto','categoria','descripcion','costoCompra','precioVenta','valorTotal','proveedor','numeroFactura','codigoProducto','cantidadComprada','costoCompraTotal','fechaCaducidad'].forEach(id => { if($(id)) $(id).value = ''; });
   var btn = $('btnGuardar');
-  if (btn) {
-    btn.textContent = '💾 Guardar Producto en Inventario';
-    btn.classList.remove('btn-warning');
-    btn.classList.add('btn-primary');
-  }
+  if (btn) { btn.textContent = '💾 Guardar Producto en Inventario'; btn.classList.remove('btn-warning'); btn.classList.add('btn-primary'); }
 }
 
 function cargarParaEdicion(idx) {
   var p = memoriaProductosPOS[idx];
   cambiarSeccionTrabajo('ALTA');
-  
-  $('codigoSku').value = p.sku;
-  $('nombreProducto').value = p.nombre;
-  $('categoria').value = p.categoria || '';
-  $('descripcion').value = p.descripcion || '';
-  $('costoCompra').value = p.costoCompra || 0;
-  $('precioVenta').value = p.precioFinal || 0;
-  $('proveedor').value = p.proveedor || '';
-  $('codigoProducto').value = p.codigoProducto || '';
-  $('cantidadComprada').value = p.stock || 0;
-  
-  $('codigoSku').disabled = true;
-  skuEdicionOriginal = p.sku;
-  
-  var btn = $('btnGuardar');
-  btn.textContent = '🔄 Actualizar Producto';
-  btn.classList.remove('btn-primary');
-  btn.classList.add('btn-warning');
+  $('codigoSku').value = p.sku; $('nombreProducto').value = p.nombre; $('categoria').value = p.categoria || ''; $('descripcion').value = p.descripcion || ''; $('costoCompra').value = p.costoCompra || 0; $('precioVenta').value = p.precioFinal || 0; $('proveedor').value = p.proveedor || ''; $('codigoProducto').value = p.codigoProducto || ''; $('cantidadComprada').value = p.stock || 0;
+  $('codigoSku').disabled = true; skuEdicionOriginal = p.sku;
+  var btn = $('btnGuardar'); btn.textContent = '🔄 Actualizar Producto'; btn.classList.remove('btn-primary'); btn.classList.add('btn-warning');
 }
 
 async function ejecutarBusquedaPOS() {
@@ -524,35 +469,26 @@ async function cargarVentasParaReportes() {
 
 function procesarReporteHistorico(filtro) {
   var vB = 0, rE = 0, fC = 0, cR = 0, gN = 0;
-  
-  var hoyReal = new Date();
-  var hoyDesplazado = new Date(hoyReal.getTime() - (11 * 60 * 60 * 1000));
+  var hoyReal = new Date(), hoyDesplazado = new Date(hoyReal.getTime() - (11 * 60 * 60 * 1000));
   var dH = hoyDesplazado.getDate(), mH = hoyDesplazado.getMonth(), yH = hoyDesplazado.getFullYear();
   
   memoriaVentas.forEach(v => {
     if (!v.fecha) return; 
-    
-    var fReal = new Date(v.fecha);
-    var f = new Date(fReal.getTime() - (11 * 60 * 60 * 1000));
+    var fReal = new Date(v.fecha), f = new Date(fReal.getTime() - (11 * 60 * 60 * 1000));
     var d = f.getDate(), m = f.getMonth(), y = f.getFullYear(), apl = false;
     
     if (filtro === 'dia' && d === dH && m === mH && y === yH) apl = true;
     else if (filtro === 'mes' && m === mH && y === yH) apl = true;
     else if (filtro === 'ano' && y === yH) apl = true;
     else if (filtro === 'semana') { 
-      var ini = new Date(hoyDesplazado); 
-      ini.setDate(ini.getDate() - ini.getDay()); 
-      ini.setHours(0,0,0,0); 
-      var fin = new Date(ini); 
-      fin.setDate(fin.getDate() + 6); 
-      fin.setHours(23,59,59,999); 
+      var ini = new Date(hoyDesplazado); ini.setDate(ini.getDate() - ini.getDay()); ini.setHours(0,0,0,0); 
+      var fin = new Date(ini); fin.setDate(fin.getDate() + 6); fin.setHours(23,59,59,999); 
       if (f >= ini && f <= fin) apl = true; 
     }
     
     if (apl) { 
       vB += v.total; cR += v.cost; gN += v.ganancia; 
-      if (v.tipoPago === 'Fiar' && v.estadoPago === 'Pendiente') fC += v.total; 
-      else rE += v.total; 
+      if (v.tipoPago === 'Fiar' && v.estadoPago === 'Pendiente') fC += v.total; else rE += v.total; 
     }
   });
   
@@ -721,18 +657,13 @@ async function generarReporteConsolidado() {
     let html = construirPlantillaReporte('CONSOLIDADO DE INVENTARIO ACTUAL', inventario, 'consolidado');
     prepararImpresion(html); 
     guardarReporteEnDrive(html, 'Consolidado_Inventario', new Date()); 
-  } catch (error) {
-    alert("Error generando consolidado: " + error.message);
-  }
+  } catch (error) { alert("Error generando consolidado: " + error.message); }
 }
 
 async function generarReporteVentasMes() {
   try {
     const ventas = await apiFetch('obtenerReporteVentas', {}, 'GET');
-    const hoy = new Date();
-    const mesActual = hoy.getMonth();
-    const anioActual = hoy.getFullYear();
-
+    const hoy = new Date(); const mesActual = hoy.getMonth(); const anioActual = hoy.getFullYear();
     let productosMes = {};
     ventas.forEach(v => {
       let f = new Date(v.fecha);
@@ -740,39 +671,27 @@ async function generarReporteVentasMes() {
         let partes = v.detalles.split(', ');
         partes.forEach(p => {
           let match = p.match(/(.*) \(x(\d+)\)/);
-          if (match) {
-            let nombre = match[1].trim();
-            let cant = Number(match[2]);
-            productosMes[nombre] = (productosMes[nombre] || 0) + cant;
-          }
+          if (match) { let nombre = match[1].trim(); let cant = Number(match[2]); productosMes[nombre] = (productosMes[nombre] || 0) + cant; }
         });
       }
     });
 
     let arrVentas = Object.keys(productosMes).map(k => ({ nombre: k, cantidad: productosMes[k] }));
     arrVentas.sort((a, b) => b.cantidad - a.cantidad);
-
     const inventario = await apiFetch('buscarProductos', { crit: '' }, 'GET');
-    let invMap = {};
-    inventario.forEach(i => invMap[i.nombre] = i);
-
+    let invMap = {}; inventario.forEach(i => invMap[i.nombre] = i);
     let dataReporte = arrVentas.map(item => {
       let i = invMap[item.nombre] || {};
       return { sku: i.sku || 'N/A', nombre: item.nombre, categoria: i.categoria || 'N/A', stock: i.stock || '0', proveedor: i.proveedor || 'N/A', ventas: item.cantidad };
     });
 
     let html = construirPlantillaReporte('INFORME DE VENTAS DEL MES', dataReporte, 'ventas');
-    prepararImpresion(html);
-    guardarReporteEnDrive(html, 'Informe_Ventas_Mensual', hoy);
-  } catch (error) {
-    alert("Error generando informe de ventas: " + error.message);
-  }
+    prepararImpresion(html); guardarReporteEnDrive(html, 'Informe_Ventas_Mensual', hoy);
+  } catch (error) { alert("Error generando informe: " + error.message); }
 }
 
 function construirPlantillaReporte(titulo, data, tipo) {
-  var d = new Date();
-  var formatoFecha = d.toLocaleDateString() + ' - ' + d.toLocaleTimeString();
-  
+  var d = new Date(); var formatoFecha = d.toLocaleDateString() + ' - ' + d.toLocaleTimeString();
   var html = '<div style="font-family: Arial, sans-serif; padding: 20px; width: 100%; color: #000; background: #fff;">' +
              '<h2 style="text-align: center; margin-bottom: 5px;">estanco E M</h2>' +
              '<h3 style="text-align: center; margin-top: 0; color: #333;">' + titulo + '</h3>' +
@@ -798,24 +717,107 @@ function construirPlantillaReporte(titulo, data, tipo) {
             '<td style="padding: 8px; border: 1px solid #ddd;">' + (item.fechaCaducidad || '') + '</td></tr>';
   });
   
-  html += '</tbody></table>' +
-          '<div style="margin-top: 40px; text-align: center; font-size: 10px; color: #555; border-top: 1px solid #aaa; padding-top: 10px;">' +
-          'Software de gestión - estanco E M</div></div>';
-          
+  html += '</tbody></table><div style="margin-top: 40px; text-align: center; font-size: 10px; color: #555; border-top: 1px solid #aaa; padding-top: 10px;">Software de gestión - estanco E M</div></div>';
   return html;
 }
 
 async function guardarReporteEnDrive(html, tipo, dateObj) {
   const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-  const mes = meses[dateObj.getMonth()];
-  const anio = dateObj.getFullYear();
-  
+  const mes = meses[dateObj.getMonth()]; const anio = dateObj.getFullYear();
   try {
     const res = await apiFetch('guardarInformeDrive', { html: html, tipo: tipo, mes: mes, anio: anio });
-    if(res.success) {
-       console.log("PDF respaldado en Drive: ", res.url);
-    }
+    if(res.success) console.log("PDF respaldado en Drive: ", res.url);
+  } catch (error) {}
+}
+
+// ============================================================================
+// NUEVO: MÓDULO DE ARCHIVO DIGITAL
+// ============================================================================
+
+function comprimirImagenCanvas(file, callback) {
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = new Image();
+    img.onload = function() {
+      var canvas = document.createElement('canvas');
+      var ctx = canvas.getContext('2d');
+      var maxW = 1200, w = img.width, h = img.height;
+      if (w > maxW || h > maxW) {
+        if (w > h) { h = Math.round((h * maxW) / w); w = maxW; }
+        else { w = Math.round((w * maxW) / h); h = maxW; }
+      }
+      canvas.width = w; canvas.height = h;
+      ctx.drawImage(img, 0, 0, w, h);
+      callback(canvas.toDataURL('image/jpeg', 0.70));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function procesarSubidaArchivo() {
+  var fInput = $('archFile').files[0];
+  var nom = $('archNombre').value.trim();
+  var prov = $('archProveedor').value.trim();
+  var not = $('archNota').value.trim();
+
+  if(!fInput || !nom || !prov) return alert('⚠️ Debes seleccionar una imagen, ingresar un nombre de archivo y el proveedor.');
+
+  var btn = $('btnGuardarArchivo');
+  btn.textContent = '⏳ Comprimiendo y Subiendo al Servidor...'; 
+  btn.disabled = true;
+
+  comprimirImagenCanvas(fInput, async function(base64) {
+    try {
+      const r = await apiFetch('guardarFacturaFisica', {
+        datos: { nombreArchivo: nom, proveedor: prov, nota: not },
+        base64: base64,
+        operador: usuarioActual
+      });
+      if(r.success) {
+        alert('✅ Factura subida y resguardada correctamente.');
+        $('archFile').value = ''; $('archNombre').value = ''; $('archProveedor').value = ''; $('archNota').value = '';
+        cargarHistorialArchivos();
+      } else {
+        alert('❌ Error: ' + r.error);
+      }
+    } catch (e) { alert('❌ Error de red: ' + e.message); }
+    btn.textContent = '📤 Subir Factura Física'; 
+    btn.disabled = false;
+  });
+}
+
+async function cargarHistorialArchivos() {
+  var tbody = $('tbodyArchivo'); 
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--text-muted);">Cargando historial de documentos...</td></tr>';
+  try {
+    const arr = await apiFetch('obtenerFacturasFisicas', {}, 'GET');
+    memoriaArchivos = arr || [];
+    filtrarArchivos();
   } catch (error) {
-    console.error("Fallo la creación del backup PDF en Drive:", error.message);
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--clr-danger);">Error de conexión.</td></tr>';
   }
+}
+
+function filtrarArchivos() {
+  var txt = $('txtBuscarArchivo').value.toLowerCase();
+  var tbody = $('tbodyArchivo');
+  if (memoriaArchivos.length === 0) return tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:20px;">No hay facturas registradas en la base de datos.</td></tr>';
+
+  var filtrados = memoriaArchivos.filter(a =>
+    (a.nombre + a.proveedor + a.nota + a.admin + a.fecha).toLowerCase().includes(txt)
+  );
+
+  if (filtrados.length === 0) return tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;">No se encontraron coincidencias.</td></tr>';
+
+  tbody.innerHTML = filtrados.map(a =>
+    '<tr>' +
+      '<td><span style="font-size:11px; color:var(--text-muted);">' + a.fecha + ' ' + a.hora + '</span></td>' +
+      '<td>' + a.admin + '</td>' +
+      '<td><b>' + a.proveedor + '</b></td>' +
+      '<td>' + a.nombre + '</td>' +
+      '<td><span style="font-size:12px;">' + a.nota + '</span></td>' +
+      '<td><a href="' + a.url + '" target="_blank" class="btn btn-info btn-sm" style="text-decoration:none;">👁️ Ver Factura</a></td>' +
+    '</tr>'
+  ).join('');
 }
