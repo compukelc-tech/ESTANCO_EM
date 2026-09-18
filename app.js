@@ -227,7 +227,7 @@ function activarSesion(nombre, rol) {
   
   $('lockScreen').style.display = 'none';
   $('siName').textContent = nombre; $('siRole').textContent = rol;
-  $('sessionInfo').style.display = 'block'; // Muestra el cuadro de sesión aquí
+  $('sessionInfo').style.display = 'block';
   
   var esAdmin = ['Súper Administrador', 'Administrador'].indexOf(rol) !== -1;
   var hab = ['Súper Administrador', 'Administrador', 'Vendedor'].indexOf(rol) !== -1;
@@ -293,6 +293,9 @@ function configurarDashboard(rol) {
     cont.innerHTML += mkCard('📂', 'var(--clr-warning-light)', 'var(--clr-warning)', 'Archivo Facturas', 'Subir documentos y soportes.', "cambiarSeccionTrabajo('ARCHIVO')");
     cont.innerHTML += mkCard('📊', 'rgba(126, 34, 206, 0.15)', '#7e22ce', 'Reporte General', 'Analizar ingresos.', "cambiarSeccionTrabajo('REPORTES')");
     cont.innerHTML += mkCard('💼', 'var(--clr-danger-light)', 'var(--clr-danger)', 'Control Cartera', 'Gestionar deudas.', "cambiarSeccionTrabajo('CARTERA')");
+    // Se devuelven los dos botones de impresión PDF
+    cont.innerHTML += mkCard('🗂️', '#e0e7ff', '#4f46e5', 'Consolidado Stock', 'Imprimir o PDF del inventario actual.', 'generarReporteConsolidado()');
+    cont.innerHTML += mkCard('📈', '#ffedd5', '#ea580c', 'Informe Ventas Mes', 'Imprimir ventas destacadas.', 'generarReporteVentasMes()');
   }
 }
 
