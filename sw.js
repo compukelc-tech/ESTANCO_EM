@@ -1,4 +1,4 @@
-const CACHE_NAME = 'estanco-em-v2';
+const CACHE_NAME = 'estanco-em-v4';
 const urlsToCache = [
   './',
   './index.html',
@@ -13,7 +13,7 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('Archivos cacheados exitosamente (v2)');
+        console.log('Archivos cacheados exitosamente (v4)');
         return cache.addAll(urlsToCache);
       })
   );
