@@ -8,7 +8,6 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbw1uQXEyyMSBQUkXmP4RMOb
 let usuarioActual = null, rolActual = null, correoTemporal = null, usernameActual = null;
 let memoriaProductosPOS = [], carritoPOS = [], memoriaVentas = [], tempBusquedaReab = [], memoriaCartera = [];
 let memoriaArchivosDigitales = [];
-let memoriaPerdidas = [], artEncontradosPerdida = [], perdidasGlobalesParaPDF = [];
 
 let temporizadorInactividad;
 const TIEMPO_LIMITE_MINUTOS = 15;
@@ -269,11 +268,8 @@ function activarSesion(nombre, rol) {
   $('btnTabRep').style.display = esAdmin ? 'inline-flex' : 'none';
   $('btnTabReabastecer').style.display = esAdmin ? 'inline-flex' : 'none';
   $('btnTabCartera').style.display = esAdmin ? 'inline-flex' : 'none';
+  $('btnTabArchivo').style.display = esAdmin ? 'inline-flex' : 'none';
   $('btnNuevoDeudorCartera').style.display = esAdmin ? 'inline-flex' : 'none';
-  
-  var btnArch = $('btnTabArchivo'); if (btnArch) btnArch.style.display = esAdmin ? 'inline-flex' : 'none';
-  var btnPerd = $('btnTabPerdida'); if (btnPerd) btnPerd.style.display = hab ? 'inline-flex' : 'none';
-  var btnPdfPerd = $('btnPdfPerdidas'); if (btnPdfPerd) btnPdfPerd.style.display = esAdmin ? 'block' : 'none';
   
   var soloLectura = ['Usuario', 'Cliente'].indexOf(rol) !== -1;
   document.querySelectorAll('#areaProducto input:not(#calcCostoBase):not(#calcMargen)').forEach(function (i) { i.disabled = soloLectura; });
@@ -310,15 +306,10 @@ async function procesarCambioClaveVoluntario() {
 
 function configurarDashboard(rol) {
   var cont = $('dashboardBotones'), esAdmin = ['Súper Administrador', 'Administrador'].indexOf(rol) !== -1;
-  var hab = ['Súper Administrador', 'Administrador', 'Vendedor'].indexOf(rol) !== -1;
   function mkCard(icon, bg, color, titulo, desc, onclick) { 
     return `<div class="preview-card" onclick="${onclick}"><div class="preview-icon" style="background:${bg}; color:${color};">${icon}</div><div class="card-stat" style="font-size:17px;">${titulo}</div><div class="card-title" style="margin-top:4px;">${desc}</div></div>`; 
   }
   cont.innerHTML = mkCard('🔍', 'var(--clr-success-light)', 'var(--clr-success)', 'Buscar y Facturar', 'Consultar inventario y generar tickets.', "cambiarSeccionTrabajo('POS')");
-  
-  if (hab) {
-    cont.innerHTML += mkCard('⚠️', 'var(--clr-danger-light)', 'var(--clr-danger)', 'Reportar Daño', 'Registrar pérdidas y mermas.', 'abrirModalPerdida()');
-  }
   
   if (esAdmin) {
     cont.innerHTML += mkCard('📦', 'var(--clr-info-light)', 'var(--clr-info)', 'Ingresar Artículo', 'Añadir productos nuevos.', "cambiarSeccionTrabajo('ALTA')");
@@ -343,11 +334,8 @@ async function cargarWidgetsDashboard() {
 function cambiarSeccionTrabajo(modo) {
   ['lockScreen', 'areaDashboard', 'areaProducto', 'areaPOS', 'areaReportes', 'areaCartera', 'areaArchivo'].forEach(id => { var el = $(id); if (el) el.style.display = 'none'; });
   var nav = $('workNav');
-  
-  if (modo === 'DASHBOARD') { 
-    $('areaDashboard').style.display = 'flex'; 
-    if (nav) nav.style.display = 'none'; 
-  } else {
+  if (modo === 'DASHBOARD') { $('areaDashboard').style.display = 'flex'; if (nav) nav.style.display = 'none'; } 
+  else {
     if (nav) nav.style.display = 'flex';
     if (modo === 'ALTA') { $('areaProducto').style.display = 'flex'; restaurarFormularioAlta(); }
     if (modo === 'POS') $('areaPOS').style.display = 'flex';
@@ -355,7 +343,6 @@ function cambiarSeccionTrabajo(modo) {
     if (modo === 'CARTERA') { $('areaCartera').style.display = 'flex'; cargarCarteraModulo(); }
     if (modo === 'ARCHIVO') { $('areaArchivo').style.display = 'flex'; cargarHistorialArchivos(); }
   }
-  
   ['btnTabDash', 'btnTabAlta', 'btnTabPOS', 'btnTabRep', 'btnTabCartera', 'btnTabArchivo'].forEach(btn => { var b = $(btn); if (b) b.classList.remove('btn-success'); });
   var mapa = { DASHBOARD: 'btnTabDash', ALTA: 'btnTabAlta', POS: 'btnTabPOS', REPORTES: 'btnTabRep', CARTERA: 'btnTabCartera', ARCHIVO: 'btnTabArchivo' };
   if (mapa[modo]) { var bActive = $(mapa[modo]); if (bActive) bActive.classList.add('btn-success'); }
@@ -371,8 +358,8 @@ function procesarImpresion(formato) {
   setTimeout(function () { window.print(); contenedor.innerHTML = ''; contenedor.style.display = 'none'; document.body.classList.remove('print-a4', 'print-ticket'); }, 500);
 }
 
-function calcularPrecioSugerido() { var base = parseFloat($('calcCostoBase').value) || 0, margen = parseFloat($('calcMargen').value) || 0, pf = base + (base * (margen / 100)); $('calcPrecioSugerido').textContent = '$' + pf.toFixed(2); }
-function limpiarCalculadora() { $('calcCostoBase').value = ''; $('calcMargen').value = ''; $('calcPrecioSugerido').textContent = '$0.00'; restaurarFormularioAlta(); }
+function calcularPrecioSugerido() { var base = parseFloat($('calcCostoBase').value) \vert{}\vert{} 0, margen = parseFloat($('calcMargen').value) || 0, pf = base + (base * (margen / 100)); $('calcPrecioSugerido').textContent = '$' + pf.toFixed(2); }
+function limpiarCalculadora() { $('calcCostoBase').value = ''; $('calcMargen').value = '';$('calcPrecioSugerido').textContent = '$0.00'; restaurarFormularioAlta(); }
 function gv(id) { var e = $(id); return e ? e.value : ''; }
 
 // VARIABLES PARA LA EDICIÓN
@@ -422,7 +409,7 @@ function restaurarFormularioAlta() {
   skuEdicionOriginal = null;
   var campoSku = $('codigoSku');
   if (campoSku) campoSku.disabled = false;
-  ['codigoSku','nombreProducto','categoria','descripcion','costoCompra','precioVenta','valorTotal','proveedor','numeroFactura','codigoProducto','cantidadComprada','costoCompraTotal','fechaCaducidad'].forEach(id => { if($(id)) $(id).value = ''; });
+  ['codigoSku','nombreProducto','categoria','descripcion','costoCompra','precioVenta','valorTotal','proveedor','numeroFactura','codigoProducto','cantidadComprada','costoCompraTotal','fechaCaducidad'].forEach(id => { if($(id))$(id).value = ''; });
   var btn = $('btnGuardar');
   if (btn) {
     btn.textContent = '💾 Guardar Producto en Inventario';
@@ -438,12 +425,10 @@ function cargarParaEdicion(idx) {
   $('codigoSku').value = p.sku;
   $('nombreProducto').value = p.nombre;
   $('categoria').value = p.categoria || '';
-  $('descripcion').value = p.descripcion || '';
-  $('costoCompra').value = p.costoCompra || 0;
+  $('descripcion').value = p.descripcion \vert{}\vert{} '';$('costoCompra').value = p.costoCompra || 0;
   $('precioVenta').value = p.precioFinal || 0;
   $('proveedor').value = p.proveedor || '';
-  $('codigoProducto').value = p.codigoProducto || '';
-  $('cantidadComprada').value = p.stock || 0;
+  $('codigoProducto').value = p.codigoProducto \vert{}\vert{} '';$('cantidadComprada').value = p.stock || 0;
   
   $('codigoSku').disabled = true;
   skuEdicionOriginal = p.sku;
@@ -458,8 +443,7 @@ async function ejecutarBusquedaPOS() {
   var txt = $('txtBuscarPOS').value; if (!txt) return;
   try {
     const arr = await apiFetch('buscarProductos', { crit: txt }, 'GET');
-    memoriaProductosPOS = arr; $('wrapTablaResultados').style.display = 'block';
-    $('thDinamicoPOS').innerHTML = ['SKU', 'Nombre', 'Categoría', 'Stock', 'Precio', 'Proveedor', 'Acción'].map(c => `<th>${c}</th>`).join('');
+    memoriaProductosPOS = arr; $('wrapTablaResultados').style.display = 'block';$('thDinamicoPOS').innerHTML = ['SKU', 'Nombre', 'Categoría', 'Stock', 'Precio', 'Proveedor', 'Acción'].map(c => `<th>${c}</th>`).join('');
     if (arr.length === 0) { $('tbodyResultadosPOS').innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-muted);">Sin resultados.</td></tr>'; return; }
     
     $('tbodyResultadosPOS').innerHTML = arr.map((p, idx) => {
@@ -540,15 +524,7 @@ async function finalizarTicketVenta() {
 }
 
 async function cargarVentasParaReportes() { 
-  try { 
-    const res = await apiFetch('obtenerReporteVentas', {}, 'GET'); 
-    memoriaVentas = res || []; 
-    try {
-      const resP = await apiFetch('obtenerPerdidas', {}, 'GET');
-      memoriaPerdidas = resP || [];
-    } catch(e) { memoriaPerdidas = []; }
-    procesarReporteHistorico('dia'); 
-  } catch (error) { console.error("Error al cargar reportes."); }
+  try { const res = await apiFetch('obtenerReporteVentas', {}, 'GET'); memoriaVentas = res || []; procesarReporteHistorico('dia'); } catch (error) { console.error("Error al cargar reportes."); }
 }
 
 function procesarReporteHistorico(filtro) {
@@ -584,35 +560,6 @@ function procesarReporteHistorico(filtro) {
       else rE += v.total; 
     }
   });
-
-  var pT = 0;
-  perdidasGlobalesParaPDF = [];
-  memoriaPerdidas.forEach(p => {
-    if (!p.fecha) return;
-    var fReal = new Date(p.fecha);
-    var f = new Date(fReal.getTime() - (11 * 60 * 60 * 1000));
-    var d = f.getDate(), m = f.getMonth(), y = f.getFullYear(), apl = false;
-    
-    if (filtro === 'dia' && d === dH && m === mH && y === yH) apl = true;
-    else if (filtro === 'mes' && m === mH && y === yH) apl = true;
-    else if (filtro === 'ano' && y === yH) apl = true;
-    else if (filtro === 'semana') { 
-      var ini = new Date(hoyDesplazado); 
-      ini.setDate(ini.getDate() - ini.getDay()); 
-      ini.setHours(0,0,0,0); 
-      var fin = new Date(ini); 
-      fin.setDate(fin.getDate() + 6); 
-      fin.setHours(23,59,59,999); 
-      if (f >= ini && f <= fin) apl = true; 
-    }
-
-    if (apl) {
-      pT += p.perdidaTotal;
-      perdidasGlobalesParaPDF.push(p);
-    }
-  });
-
-  gN = gN - pT;
   
   var nom = { dia: 'HOY', semana: 'ESTA SEMANA', mes: 'ESTE MES', ano: 'ESTE AÑO' };
   $('lblFiltroActual').textContent = 'PERÍODO: ' + (nom[filtro] || filtro.toUpperCase());
@@ -621,9 +568,6 @@ function procesarReporteHistorico(filtro) {
   $('txtFiadoReporte').textContent = '$' + fC.toFixed(2); 
   $('txtCostoReporte').textContent = '$' + cR.toFixed(2); 
   $('txtGananciaReporte').textContent = '$' + gN.toFixed(2);
-
-  var lblPerdidas = $('txtPerdidasReporte');
-  if (lblPerdidas) lblPerdidas.textContent = '$' + pT.toFixed(2);
   
   if (['Súper Administrador', 'Administrador'].indexOf(rolActual) !== -1) {
     $('cajaDesgloseReporte').style.display = 'grid';
@@ -896,7 +840,7 @@ async function guardarReporteEnDrive(html, tipo, dateObj) {
 }
 
 // ============================================================================
-// MÓDULO: ARCHIVO DIGITAL DE FACTURAS FÍSICAS (RECONSTRUIDO)
+// MÓDULO: ARCHIVO DIGITAL DE FACTURAS FÍSICAS
 // ============================================================================
 
 async function procesarSubidaArchivo() {
@@ -1008,144 +952,4 @@ function filtrarArchivos() {
     (doc.nota && doc.nota.toLowerCase().includes(query))
   );
   renderizarHistorialArchivos(filtrados);
-}
-
-// ============================================================================
-// MÓDULO DE PÉRDIDAS Y MERMAS
-// ============================================================================
-
-function abrirModalPerdida() {
-  $('txtBuscarPerdida').value = '';$('resPerdida').style.display = 'none';
-  $('btnConfirmarPerdida').style.display = 'none';$('modalRegistrarPerdida').style.display = 'flex';
-}
-
-async function buscarParaPerdida() {
-  const query = $('txtBuscarPerdida').value.trim();
-  if(!query) return alert("Escribe un término de búsqueda válido.");
-  
-  try {
-    const data = await apiFetch('buscarProductos', { crit: query }, 'GET');
-    artEncontradosPerdida = data;
-    
-    if(artEncontradosPerdida.length === 0) return alert("No se encontraron productos con ese criterio.");
-    
-    const sel = $('selArticuloPerdida');
-    sel.innerHTML = artEncontradosPerdida.map(p => `<option value="${p.sku}">${p.nombre} (SKU: ${p.sku})</option>`).join('');
-    
-    $('resPerdida').style.display = 'block';
-    mostrarStockPerdida();
-    $('btnConfirmarPerdida').style.display = 'block';
-  } catch(e) { 
-    alert("Error conectando con la base de datos compukelc: " + e.message); 
-  }
-}
-
-function mostrarStockPerdida() {
-  const sku = $('selArticuloPerdida').value;
-  const prod = artEncontradosPerdida.find(p => p.sku === sku);
-  $('lblStockActualPerdida').innerText = prod ? prod.stock : 0;
-}
-
-async function confirmarPerdida() {
-  const sku = $('selArticuloPerdida').value;
-  const cant = $('txtCantPerdida').value;
-  const motivo = $('txtMotivoPerdida').value.trim();
-  
-  if(!cant || cant <= 0) return alert("Ingresa una cantidad válida mayor a 0.");
-  if(!motivo) return alert("El motivo es obligatorio para el registro de auditoría.");
-  
-  const sesionActiva = JSON.parse(sessionStorage.getItem('sesionInventario'));
-  const miUsuario = sesionActiva ? sesionActiva.nombre : 'Desconocido';
-
-  $('btnConfirmarPerdida').disabled = true;
-  $('btnConfirmarPerdida').innerText = "Procesando...";
-
-  try {
-    const payload = { operador: miUsuario, perdida: { sku: sku, cantidad: cant, motivo: motivo } };
-    const res = await apiFetch('registrarPerdida', payload);
-    if(res.success) {
-      alert("La pérdida ha sido auditada y el stock actualizado exitosamente.");
-      $('modalRegistrarPerdida').style.display = 'none';
-      if ($('txtBuscarPOS') &&$('txtBuscarPOS').value) ejecutarBusquedaPOS(); 
-      cargarWidgetsDashboard();
-    } else {
-      alert("Fallo en la operación: " + res.error);
-    }
-  } catch(e) { 
-    alert("Error de red: " + e.message); 
-  } finally {
-    $('btnConfirmarPerdida').disabled = false;
-    $('btnConfirmarPerdida').innerText = "🚨 Registrar Pérdida";
-  }
-}
-
-async function generarPDFPerdidas() {
-  if (perdidasGlobalesParaPDF.length === 0) return alert("No existen registros de pérdidas auditados en este rango de fechas.");
-  
-  const sesionActiva = JSON.parse(sessionStorage.getItem('sesionInventario'));
-  const emisor = sesionActiva ? sesionActiva.nombre : 'compukelc Admin';
-
-  let filas = perdidasGlobalesParaPDF.map(p => `
-    <tr>
-      <td style="border:1px solid #ddd; padding:10px;">${new Date(p.fecha).toLocaleString()}</td>
-      <td style="border:1px solid #ddd; padding:10px;">${p.nombre}<br><small style="color:#666;">SKU: ${p.sku}</small></td>
-      <td style="border:1px solid #ddd; padding:10px; text-align:center;">${p.cantidad}</td>
-      <td style="border:1px solid #ddd; padding:10px; color:#b91c1c; font-weight:bold;">$${p.perdidaTotal.toLocaleString('es-CO')}</td>
-      <td style="border:1px solid #ddd; padding:10px;">${p.motivo}</td>
-      <td style="border:1px solid #ddd; padding:10px;">${p.operador}</td>
-    </tr>
-  `).join('');
-
-  const html = `
-    <div style="font-family:'Segoe UI', Arial, sans-serif; padding:20px; color:#333;">
-      <h2 style="color:#b91c1c; text-align:center; border-bottom:2px solid #b91c1c; padding-bottom:10px; margin-bottom:5px;">REPORTE OFICIAL DE MERMAS Y PÉRDIDAS</h2>
-      <p style="text-align:center; font-size:12px; color:#666; margin-top:0;">Generado por el sistema central de compukelc<br>Auditor responsable: ${emisor}</p>
-      
-      <table style="width:100%; border-collapse:collapse; font-size:11px; margin-top:30px;">
-        <thead>
-          <tr style="background-color:#f4f4f5; text-align:left;">
-            <th style="border:1px solid #ddd; padding:10px;">Fecha del Evento</th>
-            <th style="border:1px solid #ddd; padding:10px;">Producto Afectado</th>
-            <th style="border:1px solid #ddd; padding:10px;">Cant.</th>
-            <th style="border:1px solid #ddd; padding:10px;">Impacto Financiero</th>
-            <th style="border:1px solid #ddd; padding:10px;">Justificación Registrada</th>
-            <th style="border:1px solid #ddd; padding:10px;">Usuario Operador</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${filas}
-        </tbody>
-      </table>
-      <div style="margin-top:30px; text-align:right; font-size:14px;">
-        <strong>Total Impacto Negativo: </strong>
-        <span style="color:#b91c1c; font-size:18px;">$${perdidasGlobalesParaPDF.reduce((a,b)=>a+b.perdidaTotal, 0).toLocaleString('es-CO')}</span>
-      </div>
-    </div>
-  `;
-  
-  const d = new Date();
-  const payload = {
-    html: html,
-    tipo: 'Auditoria_Perdidas',
-    mes: d.getMonth() + 1,
-    anio: d.getFullYear()
-  };
-  
-  const btn = $('btnPdfPerdidas');
-  btn.innerText = "⏳ Conectando con Google Drive...";
-  btn.disabled = true;
-
-  try {
-    const data = await apiFetch('guardarInformeDrive', payload);
-    if(data.success) {
-      window.open(data.url, '_blank');
-    } else {
-      alert("Error en el motor de renderizado PDF: " + data.error);
-    }
-  } catch(e) { 
-    alert("Error de enlace al generar el documento."); 
-  } finally {
-    btn.innerText = "📄 Descargar Reporte de Pérdidas (PDF)";
-    btn.disabled = false;
-  }
 }
