@@ -1,5 +1,5 @@
 // ============================================================================
-// BASE DE DATOS - FRONTEND APP.JS
+// BASE DE DATOS - FRONTEND APP.JS - COMPUKELC
 // ============================================================================
 
 const $ = (id) => document.getElementById(id);
@@ -7,7 +7,8 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbw1uQXEyyMSBQUkXmP4RMOb
 
 let usuarioActual = null, rolActual = null, correoTemporal = null, usernameActual = null;
 let memoriaProductosPOS = [], carritoPOS = [], memoriaVentas = [], tempBusquedaReab = [], memoriaCartera = [];
-let memoriaPerdidas = [], artEncontradosPerdida = [], perdidasGlobalesParaPDF = [];
+let memoriaArchivosDigitales = []; // Memoria Archivo Digital
+let memoriaPerdidas = [], artEncontradosPerdida = [], perdidasGlobalesParaPDF = []; // Memoria Pérdidas
 
 let temporizadorInactividad;
 const TIEMPO_LIMITE_MINUTOS = 15;
@@ -270,6 +271,7 @@ function activarSesion(nombre, rol) {
   $('btnTabCartera').style.display = esAdmin ? 'inline-flex' : 'none';
   $('btnNuevoDeudorCartera').style.display = esAdmin ? 'inline-flex' : 'none';
   
+  var btnArch = $('btnTabArchivo'); if (btnArch) btnArch.style.display = esAdmin ? 'inline-flex' : 'none';
   var btnPerd = $('btnTabPerdida'); if (btnPerd) btnPerd.style.display = hab ? 'inline-flex' : 'none';
   var btnPdfPerd = $('btnPdfPerdidas'); if (btnPdfPerd) btnPdfPerd.style.display = esAdmin ? 'block' : 'none';
   
@@ -285,7 +287,7 @@ function activarSesion(nombre, rol) {
 function cerrarSesion() {
   usuarioActual = null; rolActual = null; usernameActual = null; clearTimeout(temporizadorInactividad);
   sessionStorage.removeItem('sesionInventario');
-  ['sessionInfo', 'tabsWrap', 'workNav', 'areaDashboard', 'areaProducto', 'areaPOS', 'areaReportes', 'areaCartera'].forEach(id => { var el = $(id); if (el) el.style.display = 'none'; });
+  ['sessionInfo', 'tabsWrap', 'workNav', 'areaDashboard', 'areaProducto', 'areaPOS', 'areaReportes', 'areaCartera', 'areaArchivo'].forEach(id => { var el = $(id); if (el) el.style.display = 'none'; });
   $('roleBadge').style.display = 'none'; $('lockScreen').style.display = 'flex'; $('appSub').textContent = 'Módulo de autenticación'; 
   mostrarLogin(); cerrarSidebar();
 }
@@ -333,18 +335,23 @@ async function cargarWidgetsDashboard() {
 }
 
 function cambiarSeccionTrabajo(modo) {
-  ['lockScreen', 'areaDashboard', 'areaProducto', 'areaPOS', 'areaReportes', 'areaCartera'].forEach(id => { var el = $(id); if (el) el.style.display = 'none'; });
+  ['lockScreen', 'areaDashboard', 'areaProducto', 'areaPOS', 'areaReportes', 'areaCartera', 'areaArchivo'].forEach(id => { var el = $(id); if (el) el.style.display = 'none'; });
   var nav = $('workNav');
-  if (modo === 'DASHBOARD') { $('areaDashboard').style.display = 'flex'; if (nav) nav.style.display = 'none'; } 
-  else {
+  
+  if (modo === 'DASHBOARD') { 
+    $('areaDashboard').style.display = 'flex'; 
+    if (nav) nav.style.display = 'none'; 
+  } else {
     if (nav) nav.style.display = 'flex';
     if (modo === 'ALTA') { $('areaProducto').style.display = 'flex'; restaurarFormularioAlta(); }
     if (modo === 'POS') $('areaPOS').style.display = 'flex';
     if (modo === 'REPORTES') $('areaReportes').style.display = 'flex';
     if (modo === 'CARTERA') { $('areaCartera').style.display = 'flex'; cargarCarteraModulo(); }
+    if (modo === 'ARCHIVO') { $('areaArchivo').style.display = 'flex'; cargarHistorialArchivos(); }
   }
-  ['btnTabDash', 'btnTabAlta', 'btnTabPOS', 'btnTabRep', 'btnTabCartera'].forEach(btn => { var b = $(btn); if (b) b.classList.remove('btn-success'); });
-  var mapa = { DASHBOARD: 'btnTabDash', ALTA: 'btnTabAlta', POS: 'btnTabPOS', REPORTES: 'btnTabRep', CARTERA: 'btnTabCartera' };
+  
+  ['btnTabDash', 'btnTabAlta', 'btnTabPOS', 'btnTabRep', 'btnTabCartera', 'btnTabArchivo'].forEach(btn => { var b = $(btn); if (b) b.classList.remove('btn-success'); });
+  var mapa = { DASHBOARD: 'btnTabDash', ALTA: 'btnTabAlta', POS: 'btnTabPOS', REPORTES: 'btnTabRep', CARTERA: 'btnTabCartera', ARCHIVO: 'btnTabArchivo' };
   if (mapa[modo]) { var bActive = $(mapa[modo]); if (bActive) bActive.classList.add('btn-success'); }
 }
 
@@ -409,7 +416,7 @@ function restaurarFormularioAlta() {
   skuEdicionOriginal = null;
   var campoSku = $('codigoSku');
   if (campoSku) campoSku.disabled = false;
-  ['codigoSku','nombreProducto','categoria','descripcion','costoCompra','precioVenta','valorTotal','proveedor','numeroFactura','codigoProducto','cantidadComprada','costoCompraTotal','fechaCaducidad'].forEach(id => { if($(id))$(id).value = ''; });
+  ['codigoSku','nombreProducto','categoria','descripcion','costoCompra','precioVenta','valorTotal','proveedor','numeroFactura','codigoProducto','cantidadComprada','costoCompraTotal','fechaCaducidad'].forEach(id => { if($(id)) $(id).value = ''; });
   var btn = $('btnGuardar');
   if (btn) {
     btn.textContent = '💾 Guardar Producto en Inventario';
@@ -425,10 +432,12 @@ function cargarParaEdicion(idx) {
   $('codigoSku').value = p.sku;
   $('nombreProducto').value = p.nombre;
   $('categoria').value = p.categoria || '';
-  $('descripcion').value = p.descripcion || '';$('costoCompra').value = p.costoCompra || 0;
+  $('descripcion').value = p.descripcion || '';
+  $('costoCompra').value = p.costoCompra || 0;
   $('precioVenta').value = p.precioFinal || 0;
   $('proveedor').value = p.proveedor || '';
-  $('codigoProducto').value = p.codigoProducto || '';$('cantidadComprada').value = p.stock || 0;
+  $('codigoProducto').value = p.codigoProducto || '';
+  $('cantidadComprada').value = p.stock || 0;
   
   $('codigoSku').disabled = true;
   skuEdicionOriginal = p.sku;
@@ -443,7 +452,8 @@ async function ejecutarBusquedaPOS() {
   var txt = $('txtBuscarPOS').value; if (!txt) return;
   try {
     const arr = await apiFetch('buscarProductos', { crit: txt }, 'GET');
-    memoriaProductosPOS = arr; $('wrapTablaResultados').style.display = 'block';$('thDinamicoPOS').innerHTML = ['SKU', 'Nombre', 'Categoría', 'Stock', 'Precio', 'Proveedor', 'Acción'].map(c => `<th>${c}</th>`).join('');
+    memoriaProductosPOS = arr; $('wrapTablaResultados').style.display = 'block';
+    $('thDinamicoPOS').innerHTML = ['SKU', 'Nombre', 'Categoría', 'Stock', 'Precio', 'Proveedor', 'Acción'].map(c => `<th>${c}</th>`).join('');
     if (arr.length === 0) { $('tbodyResultadosPOS').innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-muted);">Sin resultados.</td></tr>'; return; }
     
     $('tbodyResultadosPOS').innerHTML = arr.map((p, idx) => {
@@ -880,7 +890,122 @@ async function guardarReporteEnDrive(html, tipo, dateObj) {
 }
 
 // ============================================================================
-// MÓDULO DE PÉRDIDAS Y MERMAS - compukelc
+// MÓDULO: ARCHIVO DIGITAL DE FACTURAS FÍSICAS (RECONSTRUIDO)
+// ============================================================================
+
+async function procesarSubidaArchivo() {
+  const archFile = $('archFile').files[0];
+  const archNombre = $('archNombre').value.trim();
+  const archProveedor = $('archProveedor').value.trim();
+  const archNota = $('archNota').value.trim();
+
+  if (!archFile || !archNombre || !archProveedor) {
+    return alert('La fotografía, el nombre del archivo y el proveedor son obligatorios.');
+  }
+
+  const btn = $('btnGuardarArchivo');
+  btn.innerText = '⏳ Comprimiendo y Subiendo...';
+  btn.disabled = true;
+
+  try {
+    const base64Data = await comprimirImagenPWA(archFile);
+    const payload = {
+      datos: { nombreArchivo: archNombre, proveedor: archProveedor, nota: archNota },
+      base64: base64Data,
+      operador: usuarioActual
+    };
+
+    const res = await apiFetch('guardarFacturaFisica', payload);
+    if (res.success) {
+      alert('Factura física archivada exitosamente en el Drive de compukelc.');
+      $('archFile').value = '';$('archNombre').value = '';
+      $('archProveedor').value = '';$('archNota').value = '';
+      cargarHistorialArchivos();
+    } else {
+      alert('Error al subir: ' + res.error);
+    }
+  } catch (error) {
+    alert('Fallo de conexión o compresión: ' + error.message);
+  } finally {
+    btn.innerText = '📤 Subir Factura Física';
+    btn.disabled = false;
+  }
+}
+
+function comprimirImagenPWA(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = event => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 1200;
+        const MAX_HEIGHT = 1200;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+        } else {
+          if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.6));
+      };
+      img.onerror = error => reject(error);
+    };
+    reader.onerror = error => reject(error);
+  });
+}
+
+async function cargarHistorialArchivos() {
+  const tbody = $('tbodyArchivo');
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--text-muted);">Cargando historial...</td></tr>';
+  try {
+    const data = await apiFetch('obtenerFacturasFisicas', {}, 'GET');
+    memoriaArchivosDigitales = data || [];
+    renderizarHistorialArchivos(memoriaArchivosDigitales);
+  } catch (e) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--clr-danger);">Error de conexión con la base de datos.</td></tr>';
+  }
+}
+
+function renderizarHistorialArchivos(lista) {
+  const tbody = $('tbodyArchivo');
+  if (lista.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;">No hay documentos archivados.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = lista.map(doc => `
+    <tr style="border-bottom: 1px solid var(--border-subtle);">
+      <td style="padding: 14px 12px;"><b>${doc.fecha}</b><br><span style="font-size:11px;color:var(--text-muted);">${doc.hora}</span></td>
+      <td style="padding: 14px 12px;">${doc.admin}</td>
+      <td style="padding: 14px 12px; font-weight:600;">${doc.proveedor}</td>
+      <td style="padding: 14px 12px;">${doc.nombre}</td>
+      <td style="padding: 14px 12px; color:var(--text-muted); font-size:12px;">${doc.nota}</td>
+      <td style="padding: 14px 12px;"><a href="${doc.url}" target="_blank" class="btn btn-info btn-sm">👁️ Ver Documento</a></td>
+    </tr>
+  `).join('');
+}
+
+function filtrarArchivos() {
+  const query = $('txtBuscarArchivo').value.toLowerCase();
+  const filtrados = memoriaArchivosDigitales.filter(doc => 
+    (doc.proveedor && doc.proveedor.toLowerCase().includes(query)) ||
+    (doc.nombre && doc.nombre.toLowerCase().includes(query)) ||
+    (doc.nota && doc.nota.toLowerCase().includes(query))
+  );
+  renderizarHistorialArchivos(filtrados);
+}
+
+// ============================================================================
+// MÓDULO DE PÉRDIDAS Y MERMAS
 // ============================================================================
 
 function abrirModalPerdida() {
