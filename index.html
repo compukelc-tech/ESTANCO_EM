@@ -44,6 +44,7 @@
     <button class="btn btn-purple" id="btnTabRep" onclick="cambiarSeccionTrabajo('REPORTES')" style="display:none;">📊 Reportes</button>
     <button class="btn btn-danger" id="btnTabCartera" onclick="cambiarSeccionTrabajo('CARTERA')" style="display:none;">💼 Cartera</button>
     <button class="btn btn-warning" id="btnTabArchivo" onclick="cambiarSeccionTrabajo('ARCHIVO')" style="display:none; color: #000;">📂 Archivo Facturas</button>
+    <button class="btn btn-danger" id="btnTabPerdida" onclick="abrirModalPerdida()" style="display:none; color: #fff;">⚠️ Reportar Daño</button>
   </div>
 
   <div class="scrollable-body">
@@ -170,7 +171,9 @@
             <div class="bloque-dato"><div class="dato-label">Fiado / Cartera</div><div class="dato-valor" style="color:var(--clr-danger);" id="txtFiadoReporte">$0.00</div></div>
             <div class="bloque-dato"><div class="dato-label">Reinversión (Costo)</div><div class="dato-valor" style="color:var(--clr-warning);" id="txtCostoReporte">$0.00</div></div>
             <div class="bloque-dato"><div class="dato-label">Ganancia Neta</div><div class="dato-valor" style="color:var(--clr-info);" id="txtGananciaReporte">$0.00</div></div>
+            <div class="bloque-dato"><div class="dato-label" style="color:var(--clr-danger);">Pérdidas (Mermas)</div><div class="dato-valor" style="color:var(--clr-danger);" id="txtPerdidasReporte">$0.00</div></div>
           </div>
+          <button class="btn btn-danger btn-w100" id="btnPdfPerdidas" onclick="generarPDFPerdidas()" style="margin-top:20px; display:none;">📄 Descargar Reporte de Pérdidas (PDF)</button>
         </div>
       </div>
     </div>
@@ -407,6 +410,44 @@
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="cerrarModalCambioVoluntario()">Cancelar</button>
       <button class="btn btn-warning" id="btnActualizarMiClave" onclick="procesarCambioClaveVoluntario()">Actualizar Contraseña</button>
+    </div>
+  </div>
+</div>
+
+<div id="modalRegistrarPerdida" class="modal-overlay no-print" style="display:none; z-index:2000;">
+  <div class="modal-content" style="max-width:460px;">
+    <div class="modal-header"><h3 style="color:var(--clr-danger);">⚠️ Registrar Producto Dañado</h3></div>
+    <div class="modal-body" style="display:flex; flex-direction:column; gap:14px;">
+      <div style="font-size:11px; color:var(--text-muted);">Este registro descontará el producto del stock y quedará asociado a tu usuario de compukelc.</div>
+      <div class="form-group">
+        <label>Buscar Artículo (Nombre o SKU)</label>
+        <div style="display:flex; gap:10px;">
+          <input type="text" id="txtBuscarPerdida" placeholder="Buscar..." onkeypress="if(event.key==='Enter') buscarParaPerdida()" style="flex:1;" class="form-control-input">
+          <button class="btn btn-primary" onclick="buscarParaPerdida()">🔍</button>
+        </div>
+      </div>
+      <div id="resPerdida" style="display:none; padding:16px; background:var(--bg-base); border:1px solid var(--border-color); border-radius:var(--radius-md);">
+        <div class="form-group">
+          <label>Artículo a reportar</label>
+          <select id="selArticuloPerdida" onchange="mostrarStockPerdida()" class="form-control-input"></select>
+        </div>
+        <div style="margin-top:12px; padding:10px 12px; background:var(--bg-input); border-radius:6px; border:1px solid var(--border-color);">
+          <span style="font-size:12px; color:var(--text-muted);">Stock Actual:</span>
+          <span style="font-size:18px; font-weight:700; color:var(--clr-primary); margin-left:8px; font-family:var(--font-brand);" id="lblStockActualPerdida">0</span>
+        </div>
+        <div class="form-group" style="margin-top:12px;">
+          <label>Cantidad Dañada / Perdida</label>
+          <input type="number" id="txtCantPerdida" min="1" placeholder="Ej: 1" class="form-control-input">
+        </div>
+        <div class="form-group">
+          <label>Motivo (Obligatorio)</label>
+          <input type="text" id="txtMotivoPerdida" placeholder="Ej: Botella rota al empacar, Vencido..." class="form-control-input">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="document.getElementById('modalRegistrarPerdida').style.display='none'">Cancelar</button>
+      <button class="btn btn-danger" id="btnConfirmarPerdida" style="display:none;" onclick="confirmarPerdida()">🚨 Registrar Pérdida</button>
     </div>
   </div>
 </div>
