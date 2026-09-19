@@ -7,8 +7,8 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbw1uQXEyyMSBQUkXmP4RMOb
 
 let usuarioActual = null, rolActual = null, correoTemporal = null, usernameActual = null;
 let memoriaProductosPOS = [], carritoPOS = [], memoriaVentas = [], tempBusquedaReab = [], memoriaCartera = [];
-let memoriaArchivosDigitales = []; // Memoria Archivo Digital
-let memoriaPerdidas = [], artEncontradosPerdida = [], perdidasGlobalesParaPDF = []; // Memoria Pérdidas
+let memoriaArchivosDigitales = [];
+let memoriaPerdidas = [], artEncontradosPerdida = [], perdidasGlobalesParaPDF = [];
 
 let temporizadorInactividad;
 const TIEMPO_LIMITE_MINUTOS = 15;
@@ -310,14 +310,20 @@ async function procesarCambioClaveVoluntario() {
 
 function configurarDashboard(rol) {
   var cont = $('dashboardBotones'), esAdmin = ['Súper Administrador', 'Administrador'].indexOf(rol) !== -1;
+  var hab = ['Súper Administrador', 'Administrador', 'Vendedor'].indexOf(rol) !== -1;
   function mkCard(icon, bg, color, titulo, desc, onclick) { 
     return `<div class="preview-card" onclick="${onclick}"><div class="preview-icon" style="background:${bg}; color:${color};">${icon}</div><div class="card-stat" style="font-size:17px;">${titulo}</div><div class="card-title" style="margin-top:4px;">${desc}</div></div>`; 
   }
   cont.innerHTML = mkCard('🔍', 'var(--clr-success-light)', 'var(--clr-success)', 'Buscar y Facturar', 'Consultar inventario y generar tickets.', "cambiarSeccionTrabajo('POS')");
   
+  if (hab) {
+    cont.innerHTML += mkCard('⚠️', 'var(--clr-danger-light)', 'var(--clr-danger)', 'Reportar Daño', 'Registrar pérdidas y mermas.', 'abrirModalPerdida()');
+  }
+  
   if (esAdmin) {
     cont.innerHTML += mkCard('📦', 'var(--clr-info-light)', 'var(--clr-info)', 'Ingresar Artículo', 'Añadir productos nuevos.', "cambiarSeccionTrabajo('ALTA')");
     cont.innerHTML += mkCard('🔄', 'rgba(15, 118, 110, 0.15)', '#0f766e', 'Reabastecer Stock', 'Aumentar stock.', 'abrirModalReabastecer()');
+    cont.innerHTML += mkCard('📂', 'var(--clr-warning-light)', 'var(--clr-warning)', 'Archivo Facturas', 'Subir documentos y soportes.', "cambiarSeccionTrabajo('ARCHIVO')");
     cont.innerHTML += mkCard('📊', 'rgba(126, 34, 206, 0.15)', '#7e22ce', 'Reporte General', 'Analizar ingresos.', "cambiarSeccionTrabajo('REPORTES')");
     cont.innerHTML += mkCard('💼', 'var(--clr-danger-light)', 'var(--clr-danger)', 'Control Cartera', 'Gestionar deudas.', "cambiarSeccionTrabajo('CARTERA')");
     cont.innerHTML += mkCard('🗂️', '#e0e7ff', '#4f46e5', 'Consolidado Stock', 'Imprimir o PDF del inventario actual.', 'generarReporteConsolidado()');
