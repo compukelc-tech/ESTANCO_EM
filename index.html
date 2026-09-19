@@ -44,7 +44,7 @@
     <button class="btn btn-purple" id="btnTabRep" onclick="cambiarSeccionTrabajo('REPORTES')" style="display:none;">📊 Reportes</button>
     <button class="btn btn-danger" id="btnTabCartera" onclick="cambiarSeccionTrabajo('CARTERA')" style="display:none;">💼 Cartera</button>
     <button class="btn btn-warning" id="btnTabArchivo" onclick="cambiarSeccionTrabajo('ARCHIVO')" style="display:none; color: #000;">📂 Archivo Facturas</button>
-    <button class="btn btn-danger" id="btnTabPerdida" onclick="abrirModalPerdida()" style="display:none; color: #fff;">⚠️ Reportar Daño</button>
+    <button class="btn btn-danger" id="btnTabPerdida" onclick="abrirModalPerdida()" style="display:none; background:#b91c1c; color:#fff;">⚠️ Reportar Daño</button>
   </div>
 
   <div class="scrollable-body">
@@ -171,9 +171,9 @@
             <div class="bloque-dato"><div class="dato-label">Fiado / Cartera</div><div class="dato-valor" style="color:var(--clr-danger);" id="txtFiadoReporte">$0.00</div></div>
             <div class="bloque-dato"><div class="dato-label">Reinversión (Costo)</div><div class="dato-valor" style="color:var(--clr-warning);" id="txtCostoReporte">$0.00</div></div>
             <div class="bloque-dato"><div class="dato-label">Ganancia Neta</div><div class="dato-valor" style="color:var(--clr-info);" id="txtGananciaReporte">$0.00</div></div>
-            <div class="bloque-dato"><div class="dato-label" style="color:var(--clr-danger);">Pérdidas (Mermas)</div><div class="dato-valor" style="color:var(--clr-danger);" id="txtPerdidasReporte">$0.00</div></div>
+            <div class="bloque-dato" style="border-color: var(--clr-danger);"><div class="dato-label" style="color:var(--clr-danger);">Pérdidas (Mermas)</div><div class="dato-valor" style="color:var(--clr-danger);" id="txtPerdidasReporte">$0.00</div></div>
           </div>
-          <button class="btn btn-danger btn-w100" id="btnPdfPerdidas" onclick="generarPDFPerdidas()" style="margin-top:20px; display:none;">📄 Descargar Reporte de Pérdidas (PDF)</button>
+          <button class="btn btn-danger btn-w100" id="btnPdfPerdidas" onclick="generarPDFPerdidas()" style="margin-top:20px; display:none; background-color:#b91c1c; color:#fff;">📄 Descargar Reporte de Pérdidas (PDF)</button>
         </div>
       </div>
     </div>
@@ -199,7 +199,6 @@
        </div>
     </div>
 
-    <!-- NUEVO MÓDULO: ARCHIVO DIGITAL -->
     <div id="areaArchivo" style="display:none; flex-direction:column; gap:16px; max-width:960px; margin:0 auto; width:100%;">
       <div class="section-title">📂 Archivo de Facturas Físicas</div>
       
