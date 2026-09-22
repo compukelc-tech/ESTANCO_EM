@@ -869,7 +869,7 @@ function construirPlantillaReporte(titulo, data, tipo) {
       </table>
       
       <div style="margin-top: 40px; text-align: center; font-size: 10px; color: #555; border-top: 1px solid #aaa; padding-top: 10px;">
-          este formato es creado por el sistema de inventarios compu usuario@hotmail.com cel. *** *** ****
+          este formato es creado por el sistema de inventarios compukelc compukelc@hotmail.com cel. *** *** ****
       </div>
   </div>
   `;
@@ -919,7 +919,7 @@ async function procesarSubidaArchivo() {
 
     const res = await apiFetch('guardarFacturaFisica', payload);
     if (res.success) {
-      alert('Factura física archivada exitosamente en el Drive de compu.');
+      alert('Factura física archivada exitosamente en el Drive de compukelc.');
       $('archFile').value = '';$('archNombre').value = '';
       $('archProveedor').value = '';$('archNota').value = '';
       cargarHistorialArchivos();
@@ -1079,7 +1079,7 @@ async function generarPDFPerdidas() {
   if (perdidasGlobalesParaPDF.length === 0) return alert("No existen registros de pérdidas auditados en este rango de fechas.");
   
   const sesionActiva = JSON.parse(sessionStorage.getItem('sesionInventario'));
-  const emisor = sesionActiva ? sesionActiva.nombre : 'compu Admin';
+  const emisor = sesionActiva ? sesionActiva.nombre : 'compukelc Admin';
 
   let filas = perdidasGlobalesParaPDF.map(p => `
     <tr>
@@ -1095,7 +1095,7 @@ async function generarPDFPerdidas() {
   const html = `
     <div style="font-family:'Segoe UI', Arial, sans-serif; padding:20px; color:#333;">
       <h2 style="color:#b91c1c; text-align:center; border-bottom:2px solid #b91c1c; padding-bottom:10px; margin-bottom:5px;">REPORTE OFICIAL DE MERMAS Y PÉRDIDAS</h2>
-      <p style="text-align:center; font-size:12px; color:#666; margin-top:0;">Generado por el sistema central de compu<br>Auditor responsable: ${emisor}</p>
+      <p style="text-align:center; font-size:12px; color:#666; margin-top:0;">Generado por el sistema central de compukelc<br>Auditor responsable: ${emisor}</p>
       
       <table style="width:100%; border-collapse:collapse; font-size:11px; margin-top:30px;">
         <thead>
