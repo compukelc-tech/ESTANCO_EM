@@ -1032,7 +1032,7 @@ async function buscarParaPerdida() {
     mostrarStockPerdida();
     $('btnConfirmarPerdida').style.display = 'block';
   } catch(e) { 
-    alert("Error conectando con la base de datos compu: " + e.message); 
+    alert("Error conectando con la base de datos compukelc: " + e.message); 
   }
 }
 
